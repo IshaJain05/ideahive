@@ -29,6 +29,12 @@ const SignUp = () => {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+
+    if (!department) {
+      alert("Please select a department.");
+      return;
+    }
+
     try {
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "users", userCred.user.uid), {
@@ -39,15 +45,20 @@ const SignUp = () => {
       });
       navigate(role === "Faculty" ? "/faculty-dashboard" : "/student");
     } catch (err) {
-      alert("Signup failed: " + err.message);
+      if (err.code === "auth/email-already-in-use") {
+        alert("This email is already registered. Please login instead.");
+      } else {
+        alert("Signup failed: " + err.message);
+      }
     }
   };
+  console.log("Departments:", pesDepartments);
 
   return (
     <div
       className="auth-background"
       style={{
-        backgroundImage: `url(${process.env.PUBLIC_URL}/pesbg.jpg)`,
+        backgroundImage: 'url("/pesbg.jpg")',
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -63,23 +74,39 @@ const SignUp = () => {
           <img src="/logopes.png" alt="PES Logo" className="signup-logo" />
           <h1>Welcome to IdeaHive</h1>
         </div>
+
         <div className="signup-right">
           <form className="signup-form" onSubmit={handleSignUp}>
             <h2>Create your account</h2>
 
             <div className="form-group">
               <label>Name:</label>
-              <input type="text" required value={name} onChange={(e) => setName(e.target.value)} />
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
 
             <div className="form-group">
               <label>Email:</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
 
             <div className="form-group">
               <label>Password:</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
 
             <div className="form-group">
@@ -92,20 +119,33 @@ const SignUp = () => {
 
             <div className="form-group">
               <label>Department:</label>
-              <select required value={department} onChange={(e) => setDepartment(e.target.value)}>
+              <select
+                required
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              >
                 <option value="">Select Department</option>
                 {pesDepartments.map((dept, index) => (
-                  <option key={index} value={dept}>{dept}</option>
+                  <option key={index} value={dept}>
+                    {dept}
+                  </option>
                 ))}
               </select>
             </div>
 
-            <button type="submit" className="create-account-button">Sign Up</button>
+            <button type="submit" className="create-account-button">
+              Sign Up
+            </button>
           </form>
 
           <div className="already-have-account">
             <p>Already have an account?</p>
-            <button onClick={() => navigate("/login")} className="login-button">Login</button>
+            <button
+              onClick={() => navigate("/login")}
+              className="login-button"
+            >
+              Login
+            </button>
           </div>
         </div>
       </div>
