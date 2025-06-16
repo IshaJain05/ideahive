@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <input type="file" id="file" />
+    <button onclick="upload()">Upload</button>
+    <p id="status"></p>
+
+    <script>
+      async function upload() {
+        const fileInput = document.getElementById("file");
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "ideahive_unsigned");
+
+        const status = document.getElementById("status");
+        status.textContent = "Uploading...";
+
+        try {
+          const res = await fetch("https://api.cloudinary.com/v1_1/dqnj9veqm/auto/upload", {
+            method: "POST",
+            body: formData
+          });
+          const data = await res.json();
+          if (data.secure_url) {
+            status.textContent = "✅ Upload succeeded!";
+            console.log("URL:", data.secure_url);
+          } else {
+            console.error(data);
+            status.textContent = "❌ Upload failed.";
+          }
+        } catch (err) {
+          console.error(err);
+          status.textContent = "❌ Upload failed - network or config error.";
+        }
+      }
+    </script>
+  </body>
+</html>
