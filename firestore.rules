@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // USERS
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    // PROJECTS
+    match /projects/{projectId} {
+      allow list: if isStudent() || isFaculty();
+      allow get: if request.auth != null &&
+        (request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.members || isFaculty());
+      allow create, update, delete: if isFaculty();
+
+      // FILES within a project
+      match /files/{fileId} {
+        allow read: if request.auth != null &&
+          (request.auth.uid == resource.data.uploadedBy || isFaculty());
+        allow create: if request.auth != null;
+        allow delete: if isFaculty();
+      }
+
+      // MESSAGES within a project
+      match /messages/{messageId} {
+        allow read: if request.auth != null &&
+          (resource.data.sender == request.auth.uid || resource.data.receiver == request.auth.uid);
+        allow create: if request.auth != null &&
+          request.resource.data.sender == request.auth.uid &&
+          request.resource.data.receiver != null;
+      }
+    }
+
+    // TASKS
+    match /tasks/{taskId} {
+      allow list: if isStudent() || isFaculty();
+      allow get: if request.auth != null &&
+        (get(/databases/$(database)/documents/tasks/$(taskId)).data.studentId == request.auth.uid || isFaculty());
+      allow create: if isFaculty();
+      allow update: if request.auth.uid == resource.data.studentId || isFaculty();
+    }
+
+    // INTERVIEWS
+    match /interviews/{interviewId} {
+      allow list: if isStudent() || isFaculty();
+      allow get: if request.auth != null &&
+        (isFaculty() || request.auth.uid == get(/databases/$(database)/documents/interviews/$(interviewId)).data.studentId);
+      allow create: if isFaculty();
+    }
+
+    // INTERVIEW FEEDBACK
+    match /interview_feedback/{feedbackId} {
+      allow list: if isStudent() || isFaculty();
+      allow get: if request.auth != null &&
+        (isFaculty() || request.auth.uid == get(/databases/$(database)/documents/interview_feedback/$(feedbackId)).data.studentId);
+      allow create: if isFaculty();
+    }
+
+    // CHATS
+    match /chats/{chatId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.resource.data.sender == request.auth.uid &&
+        request.resource.data.receiver != null;
+    }
+
+    // NOTIFICATIONS
+    match /notifications/{notifId} {
+      allow list: if request.auth != null;
+      allow get: if request.auth.uid == resource.data.to;
+      allow create: if request.auth != null;
+    }
+
+    // PROJECT REQUESTS
+    match /projectRequests/{reqId} {
+      allow list: if isStudent() || isFaculty();
+      allow get: if request.auth != null &&
+        (isFaculty() || request.auth.uid == get(/databases/$(database)/documents/projectRequests/$(reqId)).data.studentId);
+      allow create: if request.auth != null;
+      allow update, delete: if isFaculty();
+    }
+
+    // MAIL QUEUE
+    match /mail/{mailId} {
+      allow create: if request.auth != null;
+    }
+
+    // ACTIVITY LOGS
+    match /activity_logs/{logId} {
+      allow read, create: if request.auth != null;
+    }
+
+    // BLOCK EVERYTHING ELSE
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // HELPER FUNCTIONS
+    function isFaculty() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Faculty";
+    }
+
+    function isStudent() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Student";
+    }
+  }
+}

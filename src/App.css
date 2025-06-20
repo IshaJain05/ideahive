@@ -23,13 +23,51 @@ body {
   color: #2c3e50;
   text-align: center;
 }
-.dashboard-title {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: #0056b3;
-  margin-bottom: 1.5rem;
+
+.header-bar {
+  height: 60px;
+  background-color: #011d41;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  height: 40px;
+}
+
+.header-right {
+  display: flex;
+  gap: 20px;
+}
+
+.icon-wrapper {
+  position: relative;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+}
 /* Container Utility */
 .container {
   max-width: 1200px;
@@ -41,6 +79,11 @@ body {
 }
 .dashboard-content {
   width: 100%;
+}
+.dashboard-title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #0056b3;
 }
 
 /* Buttons */
@@ -84,15 +127,6 @@ input, select, textarea {
 }
 
 /* Header */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #ddd;
-  background: linear-gradient(to right, #0056b3, #007bff);
-  color: white;
-}
 .idea-hive-title {
   font-size: 2rem;
   font-weight: bold;
@@ -284,16 +318,24 @@ input, select, textarea {
 
 /* ===== Sidebar ===== */
 .sidebar {
-  width: 220px;
-  background-color: #004080;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem 1rem;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
   height: 100vh;
+  width: 220px;
+  background-color: #002244;
+  color: white;
+  padding: 1.5;
+  
 }
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
 
 .sidebar h2 {
   font-size: 1.5rem;
@@ -307,20 +349,42 @@ input, select, textarea {
   margin: 1rem 0;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  transition: background-color 0.3s ease;
   display: block;
+  font-weight: 500;
 }
 
 .sidebar a:hover {
   background-color: #0056b3;
 }
 
+.sidebar-link {
+  background: none;
+  border: none;
+  color: white;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar a.active-link {
+  background-color: #0056b3;
+}
+
+
 /* ===== Main Content ===== */
 .main-content {
+  margin-left: 220px;
+  margin-top: 60px;
   flex: 1;
   padding: 2rem;
   background: linear-gradient(to right, #f7f9fc, #e1ecf4);
-  overflow-x: hidden;
+  overflow-y: auto;
 }
 .dashboard-lower-grid {
   display: grid;
@@ -338,25 +402,27 @@ input, select, textarea {
 }
 
 .project-card {
-  background: white;
+  background: #fff;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
 }
 
 .project-card:hover {
-  transform: translateY(-5px);
+  transform: scale(1.01);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .project-card h3 {
-  margin-bottom: 0.5rem;
   color: #0056b3;
+  margin-bottom: 0.5rem;
 }
 
 .project-card p {
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
   color: #444;
   font-size: 0.95rem;
 }
@@ -367,10 +433,13 @@ input, select, textarea {
   font-weight: bold;
 }
 
+
 .page-container {
-  max-width: 1200px;
+  max-width: 900px;
   margin: auto;
   padding: 2rem;
+  background: #f5f8ff;
+  font-family: 'Segoe UI', sans-serif;
 }
 .project-header {
   text-align: center;
@@ -392,10 +461,6 @@ input, select, textarea {
   opacity: 0.9;
 }
 
-.project-card {
-  position: relative;
-  padding-top: 1.2rem;
-}
 
 .project-badge {
   position: absolute;
@@ -449,27 +514,8 @@ input, select, textarea {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
 }
-.project-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-}
-.project-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-}
-.project-card h3 {
-  color: #0056b3;
-  margin-bottom: 0.5rem;
-}
-.project-card p {
-  margin: 0.4rem 0;
-  color: #444;
-  font-size: 0.95rem;
-}
+
+
 .project-badge {
   position: absolute;
   top: 1rem;
@@ -504,7 +550,8 @@ input, select, textarea {
   font-size: 2rem;
   font-weight: bold;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  color: #0d47a1;
 }
 
 .project-grid {
@@ -512,19 +559,16 @@ input, select, textarea {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
 }
-
-.project-card {
+.project-group {
   background: #fff;
-  padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  transition: 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.project-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-}
+
+
 
 .add-project {
   border: 2px dashed #ccc;
@@ -1148,18 +1192,7 @@ input, select {
 .interview-card p {
   margin: 0.3rem 0;
 }
-.project-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  transition: transform 0.2s ease;
-}
 
-.project-card:hover {
-  transform: scale(1.01);
-}
 
 .project-title {
   font-size: 1.3rem;
@@ -1190,20 +1223,7 @@ input, select {
   gap: 25px;
   margin-top: 30px;
 }
-.sidebar-link {
-  background: none;
-  border: none;
-  color: white;
-  text-align: left;
-  padding: 0.75rem 1rem;
-  width: 100%;
-  cursor: pointer;
-  font-size: 1rem;
-}
 
-.sidebar-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
 .chat-dropdown {
   position: absolute;
   top: 60px;
@@ -1324,3 +1344,73 @@ input, select {
 .dropdown-wrapper {
   position: relative;
 }
+
+.task-item {
+  background: #fafafa;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-left: 4px solid #0d47a1;
+  border-radius: 8px;
+}
+
+.task-item h3 {
+  margin: 0.2rem 0;
+  color: #263238;
+}
+
+.task-item p {
+  margin: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.task-item a {
+  color: #1e88e5;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.task-item a:hover {
+  text-decoration: underline;
+}
+
+.task-item input[type="file"] {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-item button {
+  padding: 0.4rem 1.2rem;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.task-item button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.interview-card {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.primary-button {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #1976d2;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+}
+

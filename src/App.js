@@ -1,75 +1,84 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminUserLister from "./pages/AdminUserLister";
-
-import AdminDashboard from "./pages/AdminDashboard";
-import FacultyDashboard from "./pages/FacultyDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
-import EditProfile from "./pages/EditProfile";
-import './App.css';
-import MyProjects from "./pages/MyProjects";
-import UpcomingInterviews from "./pages/UpcomingInterviews";
-//import ResearchDomain from "./pages/ResearchDomain";
-import FacultyConnect from "./pages/FacultyConnect";
-import TrackTask from "./pages/TrackTask";
-import AssignTask from "./pages/AssignTask";
-import ScheduleInterview from "./pages/ScheduleInterview";
-import ScheduledInterview from "./pages/ScheduledInterview";
-import Chat from "./pages/Chat";
-import JoinProject from "./pages/JoinProject";
-import ManageRequests from "./pages/ManageRequests";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DashboardLayout from "./components/DashboardLayout";
+
+// Student Pages
+import StudentDashboard from "./pages/StudentDashboard";
 import AvailableProjects from "./pages/AvailableProjects";
-import TrackProgress from "./pages/TrackProgress";
-import ProjectOverview from "./pages/ProjectOverview";
+import MyProjects from "./pages/MyProjects";
+import TrackTask from "./pages/TrackTask";
 import ActivityLog from "./components/ActivityLog";
-import FacultyTrackTasks from "./pages/FacultyTrackTasks";
-import StudentPerformance from "./pages/StudentPerformance";
+import UpcomingInterviews from "./pages/UpcomingInterviews";
+import EditProfile from "./pages/EditProfile";
+import Chat from "./pages/Chat";
+
+// Faculty Pages
+import FacultyDashboard from "./pages/FacultyDashboard";
+import ScheduleInterview from "./pages/ScheduleInterview";
+import ManageRequests from "./pages/ManageRequests";
+import AssignTask from "./pages/AssignTask";
+import ProjectOverview from "./pages/ProjectOverview";
 import InterviewFeedbackSummary from "./pages/InterviewFeedbackSummary";
-import FacultyTasksOverview from "./components/FacultyTasksOverview";
-
-
 
 const App = () => {
-    return (
-            <Routes>
-                {/* Redirect to SignUp by default */}
-                <Route path="/" element={<Navigate to="/signup" />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/faculty" element={<FacultyDashboard />} />
-                <Route path="/student" element={<StudentDashboard />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/edit-profile" element={<EditProfile />} />
-                <Route path="/my-projects" element={<MyProjects />} />
-                <Route path="/upcoming-interviews" element={<UpcomingInterviews />} />
-                <Route path="/faculty-connect" element={<FacultyConnect />} />
-                <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
-                <Route path="/track-task" element={<TrackTask />} />
-                <Route path="/assign-task" element={<AssignTask />} />
-                <Route path="/schedule-interview" element={<ScheduleInterview />} />
-                <Route path="/scheduled-interview" element={<ScheduledInterview />} />
-                <Route path="/chat/:receiverId" element={<Chat />} />
-                <Route path="/join-project" element={<JoinProject />} />
-                <Route path="/manage-requests" element={<ManageRequests />} />
-                <Route path="/available-projects" element={<AvailableProjects />} />
-                <Route path="/track-progress" element={<TrackProgress />} />
-                <Route path="/project/:projectId" element={<ProjectOverview />} />
-                <Route path="/activity-log" element={<ActivityLog />} />
-                <Route path="/track-assigned-tasks" element={<FacultyTrackTasks />} />
-                <Route path="/student-performance" element={<StudentPerformance />} />
-                <Route path="/interview-feedback-summary" element={<InterviewFeedbackSummary />} />
-                <Route path="/project/:projectId" element={<ProjectOverview />} />
-                <Route path="/faculty-tasks" element={<FacultyTasksOverview />} />
-                <Route path="/admin-users" element={<AdminUserLister />} />
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
 
+      {/* Student Routes */}
+      <Route
+        path="/student/*"
+        element={
+          <ProtectedRoute allowedRoles={["Student"]}>
+            <DashboardLayout role="Student" />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<StudentDashboard />} />
+        <Route path="available-projects" element={<AvailableProjects />} />
+        <Route path="my-projects" element={<MyProjects />} />
+        <Route path="track-task" element={<TrackTask />} />
+        <Route path="activity-log" element={<ActivityLog />} />
+        <Route path="upcoming-interviews" element={<UpcomingInterviews />} />
+        <Route path="edit-profile" element={<EditProfile />} />
+        <Route path="chat" element={<Chat />} />
+      </Route>
 
-                {/* Redirect to SignUp for any other route */}
+      {/* Faculty Routes */}
+      <Route
+        path="/faculty/*"
+        element={
+          <ProtectedRoute allowedRoles={["Faculty"]}>
+            <DashboardLayout role="Faculty" />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<FacultyDashboard />} />
+        <Route path="my-projects" element={<MyProjects />} />
+        <Route path="schedule-interview" element={<ScheduleInterview />} />
+        <Route path="manage-requests" element={<ManageRequests />} />
+        <Route path="assign-task" element={<AssignTask />} />
+        <Route path="project-overview" element={<ProjectOverview />} />
+        <Route path="feedback-summary" element={<InterviewFeedbackSummary />} />
+        <Route path="edit-profile" element={<EditProfile />} />
+        <Route path="chat" element={<Chat />} />
+      </Route>
 
-
-            </Routes>
-    );
+      <Route
+        path="*"
+        element={
+          <h2 style={{ textAlign: "center", marginTop: "2rem" }}>
+            404 - Page Not Found
+          </h2>
+        }
+      />
+    </Routes>
+  );
 };
 
 export default App;

@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDoc,
-  query,
-  where,
-  serverTimestamp,
+  collection, getDocs, addDoc, updateDoc, deleteDoc,
+  doc, getDoc, query, where, serverTimestamp
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
@@ -228,7 +220,6 @@ const MyProjects = () => {
                   {expandedIds.includes(project.id) && (
                     <div className="expanded-section">
                       <FileList projectId={project.id} />
-                      {/* Future: Add task status, feedback, progress here */}
                     </div>
                   )}
                 </>

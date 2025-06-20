@@ -12,7 +12,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { toast, ToastContainer } from "react-toastify";
 import { onAuthStateChanged } from "firebase/auth";
 import "react-toastify/dist/ReactToastify.css";
-
+import "../App.css";
+ 
 const TrackTask = () => {
   const [tasksByProject, setTasksByProject] = useState({});
   const [fileUploads, setFileUploads] = useState({});
@@ -35,7 +36,7 @@ const TrackTask = () => {
 
     const fetchTasksAndProjects = async () => {
       try {
-        console.log("📥 Fetching tasks for:", currentUser.uid);
+        console.log("Fetching tasks for:", currentUser.uid);
         const taskQuery = query(
           collection(db, "tasks"),
           where("studentId", "==", currentUser.uid)
@@ -76,8 +77,8 @@ const TrackTask = () => {
 
   const submitAssignment = async (task) => {
     const file = fileUploads[task.id];
-    if (!file) return toast.error("⚠️ Please select a file.");
-    if (file.size > 10 * 1024 * 1024) return toast.error("⚠️ File too large.");
+    if (!file) return toast.error(" Please select a file.");
+    if (file.size > 10 * 1024 * 1024) return toast.error(" File too large.");
 
     try {
       setUploadingTaskId(task.id);
@@ -97,10 +98,10 @@ const TrackTask = () => {
         submittedAt: now,
       });
 
-      toast.success(isLate ? "⚠️ Submitted Late!" : "✅ Submitted!");
+      toast.success(isLate ? "ubmitted Late!" : "Submitted!");
     } catch (err) {
-      console.error("Upload failed", err);
-      toast.error("❌ Upload failed");
+      console.error("Upload Failed", err);
+      toast.error("Upload Failed");
     } finally {
       setUploadingTaskId(null);
     }
@@ -117,7 +118,7 @@ const TrackTask = () => {
   return (
     <div className="page-container">
       <ToastContainer />
-      <h1 className="page-title">📂 Track Your Tasks</h1>
+      <h1 className="page-title">Track Your Tasks</h1>
 
       {loading ? (
         <p>Loading...</p>
@@ -130,7 +131,7 @@ const TrackTask = () => {
           const progress = calculateProgress(tasks);
           return (
             <div key={projectTitle} className="project-group">
-              <h2 style={{ color: "#1a237e", marginTop: "1rem" }}>📁 {projectTitle}</h2>
+              <h2 style={{ color: "#1a237e", marginTop: "1rem" }}>{projectTitle}</h2>
 
               <div className="progress-bar" style={{
                 background: "#ddd",
@@ -166,13 +167,13 @@ const TrackTask = () => {
 
                       {task.fileUrl && (
                         <p>
-                          📄 <a href={task.fileUrl} target="_blank" rel="noopener noreferrer">View Task</a>
+                           <a href={task.fileUrl} target="_blank" rel="noopener noreferrer">View Task</a>
                         </p>
                       )}
 
                       {task.submissionUrl && (
                         <p>
-                          📄 <a href={task.submissionUrl} target="_blank" rel="noopener noreferrer">Your Submission</a>
+                           <a href={task.submissionUrl} target="_blank" rel="noopener noreferrer">Your Submission</a>
                         </p>
                       )}
 

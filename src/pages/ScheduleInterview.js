@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   collection,
-  addDoc,
   getDocs,
   query,
   where,
   doc,
   getDoc,
+  addDoc,
 } from "firebase/firestore";
-import { db, auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ScheduleInterview = () => {
@@ -18,14 +18,13 @@ const ScheduleInterview = () => {
   const [studentId, setStudentId] = useState("");
   const [dateTime, setDateTime] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser);
-        fetchApprovedStudents(currentUser.uid);
+        await fetchApprovedStudents(currentUser.uid);
       }
     });
     return () => unsubscribe();
@@ -33,59 +32,61 @@ const ScheduleInterview = () => {
 
   const fetchApprovedStudents = async (facultyUid) => {
     try {
-      const approvedRequestsQuery = query(
-        collection(db, "projectRequests"),
-        where("facultyId", "==", facultyUid),
-        where("status", "==", "Approved")
-      );
-      const approvedSnap = await getDocs(approvedRequestsQuery);
-      const approvedStudentIds = approvedSnap.docs.map((doc) => doc.data().studentId);
+      setLoading(true);
 
-      if (approvedStudentIds.length === 0) {
-        setStudents([]);
-        return;
-      }
-
-      const studentQuery = query(
-        collection(db, "users"),
-        where("role", "==", "Student")
+      // Step 1: Get all projectIds created by this faculty
+      const projectSnap = await getDocs(
+        query(collection(db, "projects"), where("facultyId", "==", facultyUid))
       );
-      const studentSnap = await getDocs(studentQuery);
-      const matchedStudents = studentSnap.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .filter((student) => approvedStudentIds.includes(student.id));
+      const projectIds = projectSnap.docs.map(doc => doc.id);
+      if (projectIds.length === 0) return setStudents([]);
+
+      // Step 2: Get approved project requests for those projects
+      const requestSnap = await getDocs(
+        query(collection(db, "projectRequests"), where("status", "==", "Approved"))
+      );
+      const approvedStudentIds = requestSnap.docs
+        .filter(req => projectIds.includes(req.data().projectId))
+        .map(req => req.data().studentId);
+
+      if (approvedStudentIds.length === 0) return setStudents([]);
+
+      // Step 3: Get student details
+      const usersSnap = await getDocs(
+        query(collection(db, "users"), where("role", "==", "Student"))
+      );
+      const matchedStudents = usersSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(s => approvedStudentIds.includes(s.id));
 
       setStudents(matchedStudents);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      toast.error("❌ Failed to load student list.");
+    } catch (err) {
+      console.error("❌ Error loading approved students:", err);
+      toast.error("Error loading students.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const sendEmailToStudent = async (studentEmail, studentName, dateTime, meetingLink) => {
+  const sendEmailToStudent = async (studentEmail, studentName, dateTime, link) => {
     const formattedDate = new Date(dateTime).toLocaleString();
     const emailData = {
       to: studentEmail,
       message: {
         subject: "📅 Interview Scheduled - IdeaHive",
         html: `
-          <p>Hello ${studentName || studentEmail},</p>
+          <p>Dear ${studentName},</p>
           <p>You have been scheduled for an interview.</p>
           <p><strong>Date & Time:</strong> ${formattedDate}</p>
-          <p><strong>Meeting Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>
+          <p><strong>Meeting Link:</strong> <a href="${link}">${link}</a></p>
           <p>Regards,<br/>IdeaHive Team</p>
-        `,
-      },
+        `
+      }
     };
-
-    try {
-      await addDoc(collection(db, "mail"), emailData);
-    } catch (err) {
-      console.error("❌ Email scheduling failed:", err);
-    }
+    await addDoc(collection(db, "mail"), emailData);
   };
 
-  const handleScheduleInterview = async (e) => {
+  const handleSchedule = async (e) => {
     e.preventDefault();
     if (!studentId || !dateTime || !meetingLink) {
       toast.error("⚠️ Please fill in all fields");
@@ -93,32 +94,28 @@ const ScheduleInterview = () => {
     }
 
     try {
+      const user = auth.currentUser;
       const studentRef = doc(db, "users", studentId);
       const studentSnap = await getDoc(studentRef);
-      const studentData = studentSnap.data();
+      const student = studentSnap.data();
 
       await addDoc(collection(db, "interviews"), {
-        studentId,
         facultyId: user.uid,
+        studentId,
         timestamp: new Date(dateTime),
         link: meetingLink,
       });
 
-      await sendEmailToStudent(
-        studentData.email,
-        studentData.name,
-        dateTime,
-        meetingLink
-      );
+      await sendEmailToStudent(student.email, student.name || "Student", dateTime, meetingLink);
 
-      toast.success("✅ Interview Scheduled & Email Sent!");
+      toast.success("✅ Interview scheduled & email sent!");
       setStudentId("");
       setDateTime("");
       setMeetingLink("");
       navigate("/faculty-dashboard");
-    } catch (error) {
-      console.error("Interview scheduling failed:", error);
-      toast.error("❌ Failed to schedule interview");
+    } catch (err) {
+      console.error("❌ Scheduling failed:", err);
+      toast.error("Interview scheduling failed");
     }
   };
 
@@ -127,93 +124,56 @@ const ScheduleInterview = () => {
       <ToastContainer />
       <h1 className="page-title">📅 Schedule an Interview</h1>
 
-      <div style={styles.card}>
-        <form onSubmit={handleScheduleInterview}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Select Student</label>
-            <select
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              required
-              style={styles.input}
-            >
-              <option value="">-- Select a Student --</option>
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name || student.email}
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="card" style={{ maxWidth: "500px", margin: "auto" }}>
+        {loading ? (
+          <p>Loading approved students...</p>
+        ) : students.length === 0 ? (
+          <p style={{ textAlign: "center", fontStyle: "italic" }}>
+            No approved students available.
+          </p>
+        ) : (
+          <form onSubmit={handleSchedule} className="auth-form">
+            <div className="form-group">
+              <label>Select Student</label>
+              <select value={studentId} onChange={(e) => setStudentId(e.target.value)} required>
+                <option value="">-- Select a Student --</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name || s.email}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Date & Time</label>
-            <input
-              type="datetime-local"
-              value={dateTime}
-              onChange={(e) => setDateTime(e.target.value)}
-              required
-              style={styles.input}
-            />
-          </div>
+            <div className="form-group">
+              <label>Date & Time</label>
+              <input
+                type="datetime-local"
+                value={dateTime}
+                onChange={(e) => setDateTime(e.target.value)}
+                required
+              />
+            </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Meeting Link</label>
-            <input
-              type="url"
-              placeholder="Enter Zoom/Google Meet Link"
-              value={meetingLink}
-              onChange={(e) => setMeetingLink(e.target.value)}
-              required
-              style={styles.input}
-            />
-          </div>
+            <div className="form-group">
+              <label>Meeting Link</label>
+              <input
+                type="url"
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                placeholder="Zoom/Google Meet"
+                required
+              />
+            </div>
 
-          <button type="submit" style={styles.button}>
-            ✔ Schedule Interview
-          </button>
-        </form>
+            <button className="primary-button" type="submit">
+              ✔ Schedule Interview
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
-};
-
-const styles = {
-  card: {
-    maxWidth: "480px",
-    margin: "2rem auto",
-    padding: "2rem",
-    background: "#f0f4ff",
-    borderRadius: "12px",
-    boxShadow: "0 0 12px rgba(0,0,0,0.1)",
-  },
-  formGroup: {
-    marginBottom: "1rem",
-  },
-  label: {
-    fontWeight: "600",
-    marginBottom: "0.5rem",
-    display: "block",
-  },
-  input: {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    fontSize: "1rem",
-  },
-  button: {
-    width: "100%",
-    padding: "12px",
-    backgroundColor: "#1976d2",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    fontWeight: "bold",
-    fontSize: "1rem",
-    cursor: "pointer",
-    marginTop: "1rem",
-  },
 };
 
 export default ScheduleInterview;

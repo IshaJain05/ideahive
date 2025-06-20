@@ -1,87 +1,118 @@
+// src/components/Header.js
 import React, { useState, useEffect } from "react";
+import { FaBell, FaComments, FaUserCircle, FaSignOutAlt, FaUserEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db, auth } from "../firebase";
+import { auth, db } from "../firebase";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc // ✅ Import added
+} from "firebase/firestore";
+import { toast } from "react-toastify";
+import "../App.css";
 
-const Header = () => {
+
+const Header = ({ role }) => {
   const navigate = useNavigate();
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [unreadTasks, setUnreadTasks] = useState(0);
-  const [upcomingInterviews, setUpcomingInterviews] = useState(0);
   const user = auth.currentUser;
 
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const isStudent = role === "Student";
+
+  // Fetch unread messages
   useEffect(() => {
     if (!user) return;
-
-    const chatQuery = query(collection(db, "chats"), where("receiver", "==", user.uid), where("read", "==", false));
-    const taskQuery = query(collection(db, "tasks"), where("assignedTo", "==", user.uid), where("status", "==", "New"));
-    const interviewQuery = query(collection(db, "interviews"), where("student", "==", user.uid));
-
-    const unsubscribeChat = onSnapshot(chatQuery, (snapshot) => setUnreadMessages(snapshot.docs.length));
-    const unsubscribeTasks = onSnapshot(taskQuery, (snapshot) => setUnreadTasks(snapshot.docs.length));
-    const unsubscribeInterviews = onSnapshot(interviewQuery, (snapshot) => setUpcomingInterviews(snapshot.docs.length));
-
-    return () => {
-      unsubscribeChat();
-      unsubscribeTasks();
-      unsubscribeInterviews();
-    };
+    const unsub = onSnapshot(
+      query(collection(db, "chats"), where("receiver", "==", user.uid), where("read", "==", false)),
+      (snap) => {
+        setUnreadMessages(snap.docs.length);
+        if (snap.docs.length) {
+          toast.info("New message received", { position: "top-right", autoClose: 3000 });
+        }
+      }
+    );
+    return () => unsub();
   }, [user]);
 
+  // Fetch unread notifications
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(
+      query(collection(db, "notifications"), where("to", "==", user.uid), where("read", "==", false), orderBy("timestamp", "desc")),
+      (snap) => {
+        const notifs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setNotifications(notifs);
+        setUnreadCount(notifs.length);
+      }
+    );
+    return () => unsub();
+  }, [user]);
+
+  const handleLogout = () => navigate("/login");
+
+  const handleNotificationClick = async (notif) => {
+    await updateDoc(doc(db, "notifications", notif.id), { read: true });
+    navigate(notif.link || "/");
+  };
+
   return (
-    <header style={{
-      backgroundColor: "#4f46e5",
-      color: "white",
-      padding: "0.8rem 2rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
-    }}>
-      {/* Left: Logo + IdeaHive */}
-      <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => navigate("/")}>
-        <img src="/logopes.png" alt="IdeaHive Logo" style={{ height: "40px", marginRight: "10px" }} />
-        <h1 style={{ margin: 0, fontSize: "1.5rem" }}>IdeaHive</h1>
+    <div className="header-bar">
+      <div className="header-left" onClick={() => navigate("/")}>
+        <img src="/IdeaHiveLogo.png" alt="logo" className="header-logo" />
+        <h2>IdeaHive</h2>
       </div>
 
-      {/* Right: Notifications */}
-      <div style={{ display: "flex", gap: "20px" }}>
-        <button style={notifButtonStyle} onClick={() => navigate("/messages")}>
-          🔔 {unreadMessages > 0 && <span style={notifBadgeStyle}>{unreadMessages}</span>}
-        </button>
-        <button style={notifButtonStyle} onClick={() => navigate("/tasks")}>
-          📋 {unreadTasks > 0 && <span style={notifBadgeStyle}>{unreadTasks}</span>}
-        </button>
-        <button style={notifButtonStyle} onClick={() => navigate("/interviews")}>
-          📅 {upcomingInterviews > 0 && <span style={notifBadgeStyle}>{upcomingInterviews}</span>}
-        </button>
+      <div className="header-right">
+        <div className="icon-wrapper" onClick={() => navigate(isStudent ? "/student/chat" : "/faculty/chat")}>
+          <FaComments />
+          {unreadMessages > 0 && <span className="badge">{unreadMessages}</span>}
+        </div>
+
+        <div className="icon-wrapper" onClick={() => setShowNotifications(!showNotifications)}>
+          <FaBell />
+          {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+        </div>
+
+        <div className="icon-wrapper" onClick={() => setShowDropdown(!showDropdown)}>
+          <FaUserCircle />
+        </div>
+
+        {showDropdown && (
+          <div className="user-dropdown">
+            <button className="dropdown-item" onClick={() => navigate(isStudent ? "/student/edit-profile" : "/faculty/edit-profile")}>
+              <FaUserEdit /> Edit Profile
+            </button>
+            <button className="dropdown-item" onClick={handleLogout}>
+              <FaSignOutAlt /> Logout
+            </button>
+          </div>
+        )}
+
+        {showNotifications && (
+          <div className="notifications-dropdown">
+            {notifications.length === 0 ? (
+              <p>No new notifications</p>
+            ) : (
+              notifications.map((notif, i) => (
+                <div key={i} className="notification-item" onClick={() => handleNotificationClick(notif)}>
+                  {notif.message}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
-    </header>
+    </div>
   );
-};
-
-const notifButtonStyle = {
-  position: "relative",
-  background: "transparent",
-  border: "none",
-  color: "white",
-  fontSize: "1.5rem",
-  cursor: "pointer",
-};
-
-const notifBadgeStyle = {
-  position: "absolute",
-  top: "-5px",
-  right: "-8px",
-  background: "red",
-  color: "white",
-  borderRadius: "50%",
-  fontSize: "0.7rem",
-  width: "18px",
-  height: "18px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
 };
 
 export default Header;

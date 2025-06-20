@@ -25,7 +25,7 @@ const InterviewFeedbackView = () => {
 
   return (
     <div style={{ padding: "1rem" }}>
-      <h3>🗒️ Interview Feedback</h3>
+      <h3>Interview Feedback</h3>
       {feedbacks.length === 0 ? (
         <p>No feedback received yet.</p>
       ) : (
